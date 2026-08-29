@@ -19,6 +19,6 @@ Then train the network on a spiral classification dataset.
 
 ## Rules
 
-- No PyTorch/TensorFlow for model implementation
+- No PyTorch/TensorFlow for model implementation yet
 - Understand every gradient used
 - Run experiments rather than only getting one successful model
