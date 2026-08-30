@@ -17,6 +17,11 @@ class Dense:
 
     def forward(self, inputs):
         self.output = np.dot(inputs, self.weights) + self.biases
+        self.inputs = inputs  # Store inputs for backward pass
+    def backward(self, dvalues):
+        self.dweights = np.dot(self.inputs.T, dvalues)
+        self.dbiases = np.sum(dvalues, axis=0, keepdims=True)
+        self.dinputs = np.dot(dvalues, self.weights.T)
 class ReLU:
     def forward(self, inputs):
         self.output = np.maximum(0, inputs)
@@ -31,7 +36,6 @@ print(activation1.output.shape)
 print(layer1.output.shape)
 
 layer2 = Dense(5, 3)
-activation2 = ReLU()
 
 layer2.forward(activation1.output)
 
@@ -57,6 +61,15 @@ class CrossEntropyLoss:
 
         return np.mean(losses)
 
+    def backward(self, y_pred, y_true):
+        samples = len(y_pred)
+
+        self.dinputs = y_pred.copy()
+
+        self.dinputs[range(samples), y_true] -= 1
+
+        self.dinputs = self.dinputs / samples
+
 softmax = Softmax()
 softmax.forward(layer2.output)
 loss_function = CrossEntropyLoss()
@@ -69,9 +82,7 @@ print(softmax.output.shape)
 print(softmax.output)
 print(np.sum(softmax.output, axis=1))  # Should be close to 1 for each sample
 
-loss_function = CrossEntropyLoss()
-loss = loss_function.forward(
-    softmax.output, 
-    y_true
-)
-print("loss:", loss)
+loss_function.backward(softmax.output, y_true)
+layer2.backward(loss_function.dinputs)
+print(loss_function.dinputs)
+print(loss_function.dinputs.shape)
