@@ -1,12 +1,5 @@
 import numpy as np
 
-weights = np.array([
-    [0.2, 0.8, -0.5],
-    [0.5, -0.3, 0.7],
-    [-0.1, 0.4, 0.9],
-    [0.6, 0.2, -0.2],
-    [-0.7, 0.3, 0.5]
-])
 inputs = np.array([
     [1, 2, 3],
     [3, 2, 1],
@@ -14,16 +7,71 @@ inputs = np.array([
     [4, 3, 2],
     [-1, 0, 1]
 ])
-biases = np.array([2, 3, 0.5, -1, 4])
 
-output = np.dot(inputs, weights.T) + biases
-relu_output = np.maximum(0, output)
+y_true = np.array([0, 1, 2, 1, 0])  # Example true labels for the inputs
 
-print(relu_output)
-print(relu_output.shape)
+class Dense:
+    def __init__(self, n_inputs, n_neurons):
+        self.weights = 0.10 * np.random.randn(n_inputs, n_neurons)
+        self.biases = np.zeros((1, n_neurons))
 
-print (weights.shape)
-print (inputs.shape)
-print (biases.shape)
-print (weights.T.shape)
+    def forward(self, inputs):
+        self.output = np.dot(inputs, self.weights) + self.biases
+class ReLU:
+    def forward(self, inputs):
+        self.output = np.maximum(0, inputs)
+layer1 = Dense(3, 5)
+activation1 = ReLU()
 
+layer1.forward(inputs)
+activation1.forward(layer1.output)
+
+print(activation1.output)
+print(activation1.output.shape)
+print(layer1.output.shape)
+
+layer2 = Dense(5, 3)
+activation2 = ReLU()
+
+layer2.forward(activation1.output)
+
+
+class Softmax:
+    def forward(self, inputs):
+        exp_values = np.exp(inputs - np.max(inputs, axis=1, keepdims=True))
+        probabilities = exp_values / np.sum(exp_values, axis=1, keepdims=True)
+        self.output = probabilities
+
+class CrossEntropyLoss:
+    def forward(self, y_pred, y_true):
+        samples = len(y_pred)
+
+        y_pred_clipped = np.clip(y_pred, 1e-7, 1 - 1e-7)
+
+        correct_confidences = y_pred_clipped[
+            range(samples),
+            y_true
+        ]
+
+        losses = -np.log(correct_confidences)
+
+        return np.mean(losses)
+
+softmax = Softmax()
+softmax.forward(layer2.output)
+loss_function = CrossEntropyLoss()
+
+loss = loss_function.forward(
+    softmax.output,
+    y_true
+)
+print(softmax.output.shape)
+print(softmax.output)
+print(np.sum(softmax.output, axis=1))  # Should be close to 1 for each sample
+
+loss_function = CrossEntropyLoss()
+loss = loss_function.forward(
+    softmax.output, 
+    y_true
+)
+print("loss:", loss)
