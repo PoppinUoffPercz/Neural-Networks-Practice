@@ -25,20 +25,13 @@ class Dense:
 class ReLU:
     def forward(self, inputs):
         self.output = np.maximum(0, inputs)
+        self.inputs = inputs  # Store inputs for backward pass
+    def backward(self, dvalues):
+        self.dinputs = dvalues.copy()
+        self.dinputs[self.inputs <= 0] = 0
 layer1 = Dense(3, 5)
 activation1 = ReLU()
-
-layer1.forward(inputs)
-activation1.forward(layer1.output)
-
-print(activation1.output)
-print(activation1.output.shape)
-print(layer1.output.shape)
-
 layer2 = Dense(5, 3)
-
-layer2.forward(activation1.output)
-
 
 class Softmax:
     def forward(self, inputs):
@@ -71,18 +64,38 @@ class CrossEntropyLoss:
         self.dinputs = self.dinputs / samples
 
 softmax = Softmax()
-softmax.forward(layer2.output)
 loss_function = CrossEntropyLoss()
 
-loss = loss_function.forward(
-    softmax.output,
-    y_true
-)
-print(softmax.output.shape)
-print(softmax.output)
-print(np.sum(softmax.output, axis=1))  # Should be close to 1 for each sample
+class SGD:
+    def __init__(self, learning_rate=0.01):
+        self.learning_rate = learning_rate
 
-loss_function.backward(softmax.output, y_true)
-layer2.backward(loss_function.dinputs)
-print(loss_function.dinputs)
-print(loss_function.dinputs.shape)
+    def update_parameters(self, layer):
+        layer.weights -= self.learning_rate * layer.dweights
+        layer.biases -= self.learning_rate * layer.dbiases
+
+optimizer = SGD(learning_rate=0.01)
+
+for epoch in range(5000):
+    layer1.forward(inputs)
+    activation1.forward(layer1.output)
+    layer2.forward(activation1.output)
+    softmax.forward(layer2.output)
+
+    loss = loss_function.forward(softmax.output, y_true)
+
+    predictions = np.argmax(softmax.output, axis=1)
+    accuracy = np.mean(predictions == y_true)
+
+    loss_function.backward(softmax.output, y_true)
+    layer2.backward(loss_function.dinputs)
+    activation1.backward(layer2.dinputs)
+    layer1.backward(activation1.dinputs)
+
+    optimizer.update_parameters(layer1)
+    optimizer.update_parameters(layer2)
+
+    if epoch % 500 == 0:
+        print("Epoch:", epoch, "Loss:", loss, "Accuracy:", accuracy)
+        print("Predictions:", predictions)
+        print("True Labels:", y_true)
